@@ -691,9 +691,13 @@
             progressBar.style.width = `${progress}%`;
             progressText.textContent = `Loading assets... ${Math.round(progress)}%`;
             
+            if (progress >= 75) {
+                progressText.textContent = 'Almost ready! You can start now if you wish...';
+                startButton.classList.add('ready');
+            }
+            
             if (loadedAssets === assetsToLoad.length) {
                 progressText.textContent = 'Ready to celebrate!';
-                startButton.classList.add('ready');
             }
         }
         
@@ -735,7 +739,7 @@
         bgMusic.volume = 1.0;
         
         startMusicBtn.addEventListener('click', function() {
-            if (loadedAssets === assetsToLoad.length) {
+            if (loadedAssets / assetsToLoad.length >= 0.75) {
                 bgMusic.play();
                 musicPopup.style.display = 'none';
             }
