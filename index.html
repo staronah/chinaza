@@ -466,41 +466,59 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 100vh;
             background: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 2000;
         }
-        
+
         .music-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: rgba(255, 255, 255, 0.9);
             padding: 30px;
             border-radius: 15px;
             text-align: center;
             animation: popup-appear 0.3s ease-out;
+            min-width: 300px;
+            max-width: 90%;
         }
         
-        @keyframes popup-appear {
-            from { transform: scale(0.7); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+        /* Loading Progress Styles */
+        .loading-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #ff6b6b;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
         }
         
         .play-button {
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            border-radius: 25px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            opacity: 0.5;
+            pointer-events: none;
         }
         
-        .play-button:hover {
-            transform: scale(1.05);
-            background: #ff5252;
+        .play-button.ready {
+            opacity: 1;
+            pointer-events: all;
         }
     </style>
 </head>
@@ -512,7 +530,11 @@
     <!-- Add Music Popup -->
     <div class="music-popup-overlay" id="musicPopup">
         <div class="music-popup">
-            <h2 style="margin-bottom: 20px;">Ready to start the celebration?</h2>
+            <h2 style="margin-bottom: 20px;">Loading your celebration...</h2>
+            <div class="progress-text" id="progressText">Loading assets... 0%</div>
+            <div class="loading-progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
             <button class="play-button" id="startMusicBtn">Let's begin</button>
         </div>
     </div>
@@ -576,7 +598,7 @@
                         <div class="memory-img" style="background-image: url('img/s1.gif');"></div>
                         <div class="memory-content">
                             <h3 class="memory-title">Final year</h3>
-                            <p class="memory-text">Remember our magical first date? You wore that gorgeous blue dress, and I knew my life would never be the same.</p>
+                            <p class="memory-text">Remember when we were in the inputting unit and you challenged me to input the most matriculation numbers I could in the shortest time? It was such a fun and unforgettable moment!</p>
                         </div>
                     </div>
                     
@@ -647,16 +669,76 @@
     </div>
     
     <script>
-        // Replace existing music autoplay code with this:
+        // Add this before any other JavaScript
+        const assetsToLoad = [
+            'music/music.mp3',
+            'img/s1.gif',
+            'img/s2.gif',
+            'img/s3.gif',
+            'img/img1.jpg',
+            'img/img2.png',
+            'img/img3.png',
+            'img/img4.png'
+        ];
+        
+        let loadedAssets = 0;
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const startButton = document.getElementById('startMusicBtn');
+        
+        function updateProgress() {
+            const progress = (loadedAssets / assetsToLoad.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `Loading assets... ${Math.round(progress)}%`;
+            
+            if (loadedAssets === assetsToLoad.length) {
+                progressText.textContent = 'Ready to celebrate!';
+                startButton.classList.add('ready');
+            }
+        }
+        
+        function preloadAsset(url) {
+            return new Promise((resolve, reject) => {
+                if (url.endsWith('.mp3')) {
+                    const audio = new Audio();
+                    audio.onloadeddata = () => {
+                        loadedAssets++;
+                        updateProgress();
+                        resolve();
+                    };
+                    audio.onerror = reject;
+                    audio.src = url;
+                } else {
+                    const img = new Image();
+                    img.onload = () => {
+                        loadedAssets++;
+                        updateProgress();
+                        resolve();
+                    };
+                    img.onerror = reject;
+                    img.src = url;
+                }
+            });
+        }
+        
+        // Preload all assets
+        Promise.all(assetsToLoad.map(url => preloadAsset(url).catch(err => {
+            console.error(`Failed to load: ${url}`);
+            loadedAssets++; // Still increment to avoid hanging
+            updateProgress();
+        })));
+        
+        // Modify existing music start code
         const bgMusic = document.getElementById('bgMusic');
         const musicPopup = document.getElementById('musicPopup');
-        const startMusicBtn = document.getElementById('startMusicBtn');
         
-        bgMusic.volume = 1.0; // Set volume to 100%
+        bgMusic.volume = 1.0;
         
         startMusicBtn.addEventListener('click', function() {
-            bgMusic.play();
-            musicPopup.style.display = 'none';
+            if (loadedAssets === assetsToLoad.length) {
+                bgMusic.play();
+                musicPopup.style.display = 'none';
+            }
         });
 
         // Slideshow functionality
